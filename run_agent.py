@@ -29,7 +29,7 @@ def run_agent_test():
 
     # 3. Test case thực tế
     print("\n--- TEST CASE ---")
-    test_message = "Hôm nay tôi đổ 50k xăng và làm ly trà sữa 35k. Ghi sổ vào hôm nay 2026-04-06 nhé. Tính xem tôi tiêu hết % ngân sách chưa."
+    test_message = "Hôm nay tôi đổ 70k xăng. Ghi sổ vào hôm nay nhé. Tính xem tôi tiêu hết % ngân sách chưa."
     print(f"\n👤 Bạn: {test_message}")
     
     print("\n" + "="*50)
