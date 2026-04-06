@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💸 AI Expense Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f1a;
+      --surface: #161928;
+      --surface2: #1e2235;
+      --border: #2a2f45;
+      --accent: #7c6ff7;
+      --accent2: #56cfb2;
+      --text: #e4e6f0;
+      --text-muted: #7a7f9a;
+      --danger: #f06060;
+      --success: #56cfb2;
+      --warning: #f9a825;
+      --radius: 16px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ===== SIDEBAR ===== */
+    .sidebar {
+      width: 300px;
+      min-width: 300px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 20px;
+      gap: 20px;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo .logo-icon {
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .sidebar-logo h1 { font-size: 15px; font-weight: 700; }
+    .sidebar-logo span { font-size: 11px; color: var(--text-muted); }
+
+    .stat-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .stat-card label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .8px;
+    }
+
+    /* Budget ring */
+    .budget-ring-wrap {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 12px;
+    }
+    .ring-svg { transform: rotate(-90deg); }
+    .ring-bg { fill: none; stroke: var(--border); stroke-width: 8; }
+    .ring-fill {
+      fill: none;
+      stroke: url(#ringGrad);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 157;
+      stroke-dashoffset: 157;
+      transition: stroke-dashoffset 1s ease;
+    }
+    .ring-label { text-align: left; }
+    .ring-label .pct { font-size: 28px; font-weight: 700; }
+    .ring-label small { font-size: 11px; color: var(--text-muted); }
+    .ring-label .amount { font-size: 13px; margin-top: 4px; color: var(--accent2); }
+
+    /* Category bars */
+    .cat-list { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .cat-item label { font-size: 12px; display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .cat-bar-bg {
+      height: 6px; background: var(--border); border-radius: 99px; overflow: hidden;
+    }
+    .cat-bar { height: 100%; border-radius: 99px; transition: width 1s ease; }
+
+    .refresh-btn {
+      background: none; border: 1px solid var(--border);
+      color: var(--text-muted); border-radius: 8px;
+      padding: 8px 12px; font-size: 12px; cursor: pointer;
+      transition: all .2s;
+      margin-top: 4px;
+    }
+    .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ===== CHAT AREA ===== */
+    .chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chat-header h2 { font-size: 15px; font-weight: 600; }
+    .status-dot {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--accent2);
+    }
+    .status-dot::before {
+      content: '';
+      width: 8px; height: 8px;
+      background: var(--accent2);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-track { background: transparent; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .msg { display: flex; gap: 12px; max-width: 75%; animation: fadeSlide .3s ease; }
+    @keyframes fadeSlide { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform:none; } }
+
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .msg.bot  { align-self: flex-start; }
+
+    .msg-avatar {
+      width: 36px; height: 36px; min-width: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .msg.user .msg-avatar { background: linear-gradient(135deg, #4f46e5, var(--accent)); }
+    .msg.bot  .msg-avatar { background: linear-gradient(135deg, var(--accent2), #3ab7ff); }
+
+    .msg-bubble {
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .msg.user .msg-bubble {
+      background: linear-gradient(135deg, #4f46e5, var(--accent));
+      border-bottom-right-radius: 4px;
+    }
+    .msg.bot .msg-bubble {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+    .msg-time { font-size: 10px; color: var(--text-muted); margin-top: 4px; text-align: right; }
+
+    /* Typing indicator */
+    .typing .msg-bubble {
+      display: flex; align-items: center; gap: 5px; padding: 14px 18px;
+    }
+    .dot { width: 7px; height: 7px; background: var(--text-muted); border-radius: 50%; animation: bounce .9s infinite; }
+    .dot:nth-child(2) { animation-delay: .15s; }
+    .dot:nth-child(3) { animation-delay: .3s; }
+    @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
+
+    /* Input area */
+    .chat-input-wrap {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 16px 24px;
+    }
+    .chat-input-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 10px 10px 16px;
+      transition: border-color .2s;
+    }
+    .chat-input-row:focus-within { border-color: var(--accent); }
+
+    #chatInput {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      resize: none;
+      max-height: 120px;
+      line-height: 1.5;
+    }
+    #chatInput::placeholder { color: var(--text-muted); }
+
+    .send-btn {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--accent), #5a7ff7);
+      border: none; border-radius: 10px;
+      color: #fff; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      transition: transform .15s, opacity .15s;
+      flex-shrink: 0;
+    }
+    .send-btn:hover { transform: scale(1.08); }
+    .send-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+    .hint { font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center; }
+
+    .quick-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .chip:hover { border-color: var(--accent); color: var(--accent); }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">💸</div>
+    <div>
+      <h1>Expense AI</h1>
+      <span>Quản lý chi tiêu thông minh</span>
+    </div>
+  </div>
+
+  <!-- Budget ring -->
+  <div class="stat-card">
+    <label>Ngân sách tháng</label>
+    <div class="budget-ring-wrap">
+      <svg width="54" height="54" viewBox="0 0 54 54" class="ring-svg">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#7c6ff7"/>
+            <stop offset="100%" style="stop-color:#56cfb2"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-bg" cx="27" cy="27" r="25"/>
+        <circle class="ring-fill" id="ringFill" cx="27" cy="27" r="25"/>
+      </svg>
+      <div class="ring-label">
+        <div class="pct" id="pctLabel">–%</div>
+        <small>đã sử dụng</small>
+        <div class="amount" id="spentLabel">Đang tải...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category breakdown -->
+  <div class="stat-card" style="flex:1; overflow:auto">
+    <label>Chi theo danh mục</label>
+    <div class="cat-list" id="catList">
+      <div style="color:var(--text-muted);font-size:12px;margin-top:8px">Đang tải...</div>
+    </div>
+  </div>
+
+  <button class="refresh-btn" onclick="loadStats()">🔄 Cập nhật thống kê</button>
+</aside>
+
+<!-- CHAT -->
+<div class="chat-container">
+  <header class="chat-header">
+    <h2>🤖 AI Expense Management Agent</h2>
+    <div class="status-dot">Đang hoạt động</div>
+  </header>
+
+  <div class="messages" id="messages">
+    <div class="msg bot">
+      <div class="msg-avatar">🤖</div>
+      <div>
+        <div class="msg-bubble">
+          Xin chào! Tôi là trợ lý quản lý chi tiêu AI của bạn.<br><br>
+          Bạn có thể nói chuyện tự nhiên với tôi, ví dụ:<br>
+          • <em>"Hôm nay tôi ăn phở 45k"</em><br>
+          • <em>"Tháng này tôi đã tiêu bao nhiêu?"</em><br>
+          • <em>"Tôi còn bao nhiêu % ngân sách?"</em>
+        </div>
+        <div class="msg-time">Bây giờ</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-input-wrap">
+    <div class="quick-chips">
+      <div class="chip" onclick="quickSend(this)">Tháng này tiêu bao nhiêu?</div>
+      <div class="chip" onclick="quickSend(this)">Còn bao nhiêu % ngân sách?</div>
+      <div class="chip" onclick="quickSend(this)">Thống kê theo danh mục</div>
+    </div>
+    <div class="chat-input-row">
+      <textarea id="chatInput" rows="1" placeholder="Nhập khoản chi hoặc câu hỏi..." onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+    </div>
+    <div class="hint">Enter để gửi · Shift+Enter xuống dòng</div>
+  </div>
+</div>
+
+<script>
+  const CAT_COLORS = ['#7c6ff7','#56cfb2','#f9a825','#f06060','#3ab7ff','#e991e4'];
+
+  function fmt(n) {
+    return new Intl.NumberFormat('vi-VN').format(n) + ' VND';
+  }
+
+  function now() {
+    return new Date().toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  function autoGrow(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  }
+
+  function quickSend(chip) {
+    document.getElementById('chatInput').value = chip.textContent;
+    sendMessage();
+  }
+
+  function appendMsg(role, text) {
+    const wrap = document.getElementById('messages');
+    const isBot = role === 'bot';
+    const div = document.createElement('div');
+    div.className = `msg ${role}`;
+    div.innerHTML = `
+      <div class="msg-avatar">${isBot ? '🤖' : '👤'}</div>
+      <div>
+        <div class="msg-bubble">${text.replace(/\n/g,'<br>')}</div>
+        <div class="msg-time">${now()}</div>
+      </div>`;
+    wrap.appendChild(div);
+    wrap.scrollTop = wrap.scrollHeight;
+    return div;
+  }
+
+  function showTyping() {
+    const wrap = document.getElementById('messages');
+    const div = document.createElement('div');
+    div.className = 'msg bot typing';
+    div.id = 'typingIndicator';
+    div.innerHTML = `
+      <div class="msg-avatar">🤖</div>
+      <div><div class="msg-bubble">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div></div>`;
+    wrap.appendChild(div);
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+
+  function hideTyping() {
+    const el = document.getElementById('typingIndicator');
+    if (el) el.remove();
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const btn = document.getElementById('sendBtn');
+    const text = input.value.trim();
+    if (!text) return;
+
+    appendMsg('user', text);
+    input.value = '';
+    input.style.height = 'auto';
+    btn.disabled = true;
+    showTyping();
+
+    try {
+      const resp = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      const data = await resp.json();
+      hideTyping();
+      appendMsg('bot', data.reply || data.error || 'Có lỗi xảy ra.');
+      loadStats();
+    } catch (err) {
+      hideTyping();
+      appendMsg('bot', '❌ Không kết nối được đến server. Hãy chắc chắn app.py đang chạy.');
+    } finally {
+      btn.disabled = false;
+      input.focus();
+    }
+  }
+
+  async function loadStats() {
+    try {
+      const resp = await fetch('/stats');
+      const data = await resp.json();
+
+      // Budget ring
+      const pct = data.percentage || 0;
+      const circumference = 2 * Math.PI * 25;
+      const offset = circumference - (pct / 100) * circumference;
+      document.getElementById('ringFill').style.strokeDashoffset = offset;
+      document.getElementById('pctLabel').textContent = pct + '%';
+      document.getElementById('spentLabel').textContent =
+        fmt(data.monthly_total) + ' / ' + fmt(data.budget);
+
+      // Category bars
+      const cats = data.categories || {};
+      const entries = Object.entries(cats).sort((a,b) => b[1]-a[1]);
+      const total = entries.reduce((s, [,v]) => s+v, 0) || 1;
+      const list = document.getElementById('catList');
+      if (entries.length === 0) {
+        list.innerHTML = '<div style="color:var(--text-muted);font-size:12px;margin-top:8px">Chưa có giao dịch</div>';
+        return;
+      }
+      list.innerHTML = entries.map(([cat, amt], i) => `
+        <div class="cat-item">
+          <label><span>${cat}</span><span>${fmt(amt)}</span></label>
+          <div class="cat-bar-bg">
+            <div class="cat-bar" style="width:${(amt/total*100).toFixed(1)}%;background:${CAT_COLORS[i%CAT_COLORS.length]}"></div>
+          </div>
+        </div>`).join('');
+    } catch(e) {
+      console.warn('Stats error:', e);
+    }
+  }
+
+  // Khởi tạo
+  loadStats();
+</script>
+</body>
+</html>
